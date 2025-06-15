@@ -2,19 +2,21 @@
 import pandas as pd
 import numpy as np
 import re
+from googletrans import Translator, LANGUAGES 
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB 
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score, classification_report
 
-# 2. Medefinsikan SpamClassifier Class (Menggunakan Bayesian Network)
+# 2. Medefinsikan SpamClassifier Class 
 class SpamClassifierBN:
     def __init__(self):
         """Initializes the model and other components."""
         self.model_pipeline = None
         self.X_test = None
         self.y_test = None
+        self.translator = Translator() 
 
     def _preprocess_text(self, text):
         """Private function to clean text."""
@@ -37,10 +39,9 @@ class SpamClassifierBN:
         df.dropna(inplace=True)
         df['Category'] = df['Category'].map({'ham': 0, 'spam': 1})
 
-        # --- Preprocessing ---
+        # --- Memproses ---
         df['processed_message'] = df['Message'].apply(self._preprocess_text)
         
-        # Kita hanya akan menggunakan fitur teks untuk Naive Bayes
         X = df['processed_message']
         y = df['Category']
         
@@ -53,7 +54,7 @@ class SpamClassifierBN:
         
         print("--- Starting Bayesian Network Model Training ---")
         self.model_pipeline.fit(X_train, y_train)
-        print("--- Model Successfully Trained! ---")
+        print("--- Model Berhasil Dilatih! ---")
     
     def evaluate(self):
         """Evaluates the model on the test set and prints the results."""
@@ -66,45 +67,59 @@ class SpamClassifierBN:
         report = classification_report(self.y_test, y_pred, target_names=['Ham', 'Spam'])
         
         print("\n" + "="*40)
-        print("MODEL EVALUATION RESULTS (BAYESIAN NETWORK)")
+        print("Hasil Evaluasi Model (BAYESIAN NETWORK)")
         print("="*40)
         print(f"\nMODEL ACCURACY: {accuracy * 100:.2f}%")
         print("\nClassification Report:")
         print(report)
 
     def predict_interactive(self):
-        """Runs an interactive loop for real-time predictions."""
+        """Runs an interactive loop for real-time predictions WITH TRANSLATION."""
         if self.model_pipeline is None:
-            print("Model has not been trained yet. Please run .train() first.")
+            print("Model Belum Dilatih")
             return
 
         while True:
-            input_text = input("\nEnter a message to check (or type 'exit' to quit): ")
+            input_text = input("\nMasukkan Pesan (ID/EN) (atau 'exit' untuk keluar): ")
             if input_text.lower() == 'exit':
                 break
+            
+            if len(input_text.split()) < 2:
+                print("Input terlalu pendek. Mohon masukkan kalimat lengkap.")
+                continue
 
-            # Prediksi langsung pada teks input (pipeline akan mengurus preprocessing)
-            prediction = self.model_pipeline.predict([input_text])
-            prediction_proba = self.model_pipeline.predict_proba([input_text])
+            try:
+                detected = self.translator.detect(input_text)
+                print(f"Bahasa terdeteksi: {LANGUAGES.get(detected.lang, detected.lang)}")
+                
+                text_to_predict = input_text
+                if detected.lang != 'en':
+                    print("Menerjemahkan ke Bahasa Inggris...")
+                    translated = self.translator.translate(input_text, dest='en')
+                    text_to_predict = translated.text
+                    print(f"Hasil translasi: '{text_to_predict}'")
+            
+            except Exception as e:
+                print(f"Gagal melakukan translasi: {e}")
+                continue
+            # -----------------------------------------------
+
+            # Prediksi dilakukan pada teks yang sudah ditranslasi (jika perlu)
+            prediction = self.model_pipeline.predict([text_to_predict])
+            prediction_proba = self.model_pipeline.predict_proba([text_to_predict])
             
             spam_prob = prediction_proba[0][1] * 100
             
             if prediction[0] == 1:
-                print(f"➡️  Prediction: SPAM  ({spam_prob:.2f}% spam probability)")
+                print(f"➡️  Prediksi: SPAM ({spam_prob:.2f}% kemungkinan spam)")
             else:
-                print(f"➡️  Prediction: HAM ({spam_prob:.2f}% spam probability)")
+                print(f"➡️  Prediksi: BUKAN SPAM (Ham) ({spam_prob:.2f}% kemungkinan spam)")
         
-        print("\nInteractive session ended.")
+        print("\nSesi interaktif selesai.")
 
 # 3.Program Utama
 if __name__ == "__main__":
-    # Meningisialisasi Classifier
     classifier_bn = SpamClassifierBN()
-    
-    # Melatih model with the data
     classifier_bn.train('spam.csv')
-    
-    # Menjalankan Interaktif prediction mode
     classifier_bn.predict_interactive()
-    
     classifier_bn.evaluate()
