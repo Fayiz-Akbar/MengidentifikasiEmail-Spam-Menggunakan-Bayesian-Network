@@ -117,7 +117,7 @@ class SpamClassifierBN:
         
         print("\nSesi interaktif selesai.")
 
-# 3.Program Utama
+# 3.Kode Utama Program 
 if __name__ == "__main__":
     classifier_bn = SpamClassifierBN()
     classifier_bn.train('spam.csv')
