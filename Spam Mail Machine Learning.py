@@ -102,7 +102,6 @@ class SpamClassifierBN:
             except Exception as e:
                 print(f"Gagal melakukan translasi: {e}")
                 continue
-            # -----------------------------------------------
 
             # Prediksi dilakukan pada teks yang sudah ditranslasi (jika perlu)
             prediction = self.model_pipeline.predict([text_to_predict])
