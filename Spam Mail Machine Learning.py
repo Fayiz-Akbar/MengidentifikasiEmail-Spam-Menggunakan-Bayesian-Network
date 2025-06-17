@@ -1,6 +1,5 @@
 # 1. Import Library
 import pandas as pd
-import numpy as np
 import re
 from googletrans import Translator, LANGUAGES 
 from sklearn.model_selection import train_test_split
@@ -9,7 +8,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score, classification_report
 
-# 2. Medefinsikan SpamClassifier Class 
+# 2. Definisikan SpamClassifier Class (Menggunakan Bayesian Network)
 class SpamClassifierBN:
     def __init__(self):
         """Initializes the model and other components."""
@@ -27,7 +26,6 @@ class SpamClassifierBN:
 
     def train(self, file_path):
         """Loads data, preprocesses, and trains the classification model."""
-        # --- Melakukan Load and Clean Data ---
         try:
             df = pd.read_csv(file_path, encoding='latin-1')
         except FileNotFoundError:
@@ -39,7 +37,6 @@ class SpamClassifierBN:
         df.dropna(inplace=True)
         df['Category'] = df['Category'].map({'ham': 0, 'spam': 1})
 
-        # --- Memproses ---
         df['processed_message'] = df['Message'].apply(self._preprocess_text)
         
         X = df['processed_message']
@@ -47,6 +44,7 @@ class SpamClassifierBN:
         
         X_train, self.X_test, y_train, self.y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
         
+        # Pipeline ini menggunakan Naive Bayes (Bayesian Network) sebagai classifier
         self.model_pipeline = Pipeline(steps=[
             ('tfidf', TfidfVectorizer(stop_words='english', max_features=3000)),
             ('classifier', MultinomialNB())  
@@ -103,7 +101,6 @@ class SpamClassifierBN:
                 print(f"Gagal melakukan translasi: {e}")
                 continue
 
-            # Prediksi dilakukan pada teks yang sudah ditranslasi (jika perlu)
             prediction = self.model_pipeline.predict([text_to_predict])
             prediction_proba = self.model_pipeline.predict_proba([text_to_predict])
             
@@ -116,7 +113,7 @@ class SpamClassifierBN:
         
         print("\nSesi interaktif selesai.")
 
-# 3.Kode Utama Program 
+# Program Utama
 if __name__ == "__main__":
     classifier_bn = SpamClassifierBN()
     classifier_bn.train('spam.csv')
